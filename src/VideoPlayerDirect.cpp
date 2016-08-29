@@ -124,7 +124,7 @@ void VideoPlayerDirect::close()
 	doAbort = true;
 	doFlush = true;
 
-	flush();
+	flush("VideoPlayerDirect::close");
 
 	if(ThreadHandle())
 	{

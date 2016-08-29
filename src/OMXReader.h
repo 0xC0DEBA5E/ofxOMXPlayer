@@ -18,6 +18,20 @@
 
 using namespace XFILE;
 
+
+#define DVD_TIME_BASE 1000000
+#define DVD_NOPTS_VALUE    (-1LL<<52) // should be possible to represent in both double and __int64
+
+#define DVD_TIME_TO_SEC(x)  ((int)((double)(x) / DVD_TIME_BASE))
+#define DVD_TIME_TO_MSEC(x) ((int)((double)(x) * 1000 / DVD_TIME_BASE))
+#define DVD_SEC_TO_TIME(x)  ((double)(x) * DVD_TIME_BASE)
+#define DVD_MSEC_TO_TIME(x) ((double)(x) * DVD_TIME_BASE / 1000)
+
+#define DVD_PLAYSPEED_PAUSE       0       // frame stepping
+#define DVD_PLAYSPEED_NORMAL      1000
+
+
+
 #define MAX_OMX_CHAPTERS 2
 
 #define MAX_OMX_STREAMS        100
@@ -38,18 +52,52 @@ typedef struct OMXChapter
 
 class OMXReader;
 
-typedef struct OMXPacket
+class OMXPacket
 {
+public:
+    
     double    pts; // pts in DVD_TIME_BASE
     double    dts; // dts in DVD_TIME_BASE
     double    now; // dts in DVD_TIME_BASE
     double    duration; // duration in DVD_TIME_BASE if available
     int       size;
-    uint8_t   *data;
+    uint8_t*  data;
     int       stream_index;
     StreamInfo hints;
-    enum AVMediaType codec_type;
-} OMXPacket;
+    AVMediaType codec_type;
+    
+
+    OMXPacket(AVPacket& avPacket)
+    {
+        size = avPacket.size;
+        //ofLogVerbose() << "FF_INPUT_BUFFER_PADDING_SIZE: " << FF_INPUT_BUFFER_PADDING_SIZE;
+        if(avPacket.data)
+        {
+            data = new uint8_t[size + FF_INPUT_BUFFER_PADDING_SIZE];
+            memcpy(data, avPacket.data, size);
+        }else
+        {
+            data = NULL;
+        }
+        
+        stream_index = 0;
+        dts  = DVD_NOPTS_VALUE;
+        pts  = DVD_NOPTS_VALUE;
+        now  = DVD_NOPTS_VALUE;
+        duration = DVD_NOPTS_VALUE;
+        codec_type = AVMEDIA_TYPE_UNKNOWN;
+    }
+
+    ~OMXPacket()
+    {
+        if(data)
+        {
+            delete data;
+            data = NULL;
+        }
+        
+    }
+};
 
 enum OMXStreamType
 {
@@ -115,8 +163,8 @@ public:
     {
         return omxChapters[(chapter > MAX_OMX_CHAPTERS) ? MAX_OMX_CHAPTERS : chapter];
     };
-    static void freePacket(OMXPacket *pkt);
-    static OMXPacket* allocPacket(int size);
+    static void freePacket(OMXPacket *pkt, string caller="UNKNOWN");
+    //static OMXPacket* allocPacket(int size);
     void setSpeed(int iSpeed);
     int getSpeed()
     {

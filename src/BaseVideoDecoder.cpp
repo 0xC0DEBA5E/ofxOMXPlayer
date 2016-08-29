@@ -174,7 +174,7 @@ bool BaseVideoDecoder::decode(uint8_t* demuxer_content, int iSize, double pts)
         while(demuxer_bytes)
         {
             // 500ms timeout
-            OMX_BUFFERHEADERTYPE *omxBuffer = decoderComponent.getInputBuffer(500);
+            OMX_BUFFERHEADERTYPE* omxBuffer = decoderComponent.getInputBuffer(500);
             if(omxBuffer == NULL)
             {
                 ofLogError(__func__) << "Decode timeout";
@@ -183,7 +183,7 @@ bool BaseVideoDecoder::decode(uint8_t* demuxer_content, int iSize, double pts)
             
             omxBuffer->nFlags = 0;
             omxBuffer->nOffset = 0;
-            
+#if 0
             if(doSetStartTime)
             {
                 omxBuffer->nFlags |= OMX_BUFFERFLAG_STARTTIME;
@@ -194,6 +194,21 @@ bool BaseVideoDecoder::decode(uint8_t* demuxer_content, int iSize, double pts)
             {
                 omxBuffer->nFlags |= OMX_BUFFERFLAG_TIME_UNKNOWN;
             }
+#endif
+            
+            if(doSetStartTime)
+            {
+                omxBuffer->nFlags |= OMX_BUFFERFLAG_STARTTIME;
+                ofLog(OF_LOG_VERBOSE, "VideoDecoderDirect::Decode VDec : setStartTime %f\n", (pts == DVD_NOPTS_VALUE ? 0.0 : pts) / DVD_TIME_BASE);
+                doSetStartTime = false;
+            }
+            if (pts == DVD_NOPTS_VALUE)
+            {
+                omxBuffer->nFlags |= OMX_BUFFERFLAG_TIME_UNKNOWN;
+            }
+            
+
+            
             
             omxBuffer->nTimeStamp = ToOMXTime((uint64_t)(pts == DVD_NOPTS_VALUE) ? 0 : pts);
             omxBuffer->nFilledLen = (demuxer_bytes > omxBuffer->nAllocLen) ? omxBuffer->nAllocLen : demuxer_bytes;
@@ -207,7 +222,9 @@ bool BaseVideoDecoder::decode(uint8_t* demuxer_content, int iSize, double pts)
                 //ofLogVerbose(__func__) << "OMX_BUFFERFLAG_ENDOFFRAME";
                 omxBuffer->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
             }
-
+            error = decoderComponent.EmptyThisBuffer(omxBuffer);
+            OMX_TRACE(error);
+#if 0
             int nRetry = 0;
             while(true)
             {
@@ -231,7 +248,7 @@ bool BaseVideoDecoder::decode(uint8_t* demuxer_content, int iSize, double pts)
                 }
                 
             }
-
+#endif
             
         }
         

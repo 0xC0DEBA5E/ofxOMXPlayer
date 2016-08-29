@@ -142,18 +142,19 @@ bool BaseVideoPlayer::decode(OMXPacket *pkt)
 
 
 
-void BaseVideoPlayer::flush()
+void BaseVideoPlayer::flush(string caller)
 {
 
 
 	lock();
 	lockDecoder();
 	doFlush = true;
+    ofLogVerbose() << "FLUSHING FROM caller: " << caller;
 	while (!packets.empty())
 	{
 		OMXPacket *pkt = packets.front();
 		packets.pop_front();
-		OMXReader::freePacket(pkt);
+		OMXReader::freePacket(pkt, "BaseVideoPlayer::flush");
 
 	}
 
@@ -199,74 +200,52 @@ bool BaseVideoPlayer::addPacket(OMXPacket *pkt)
 }
 
 
-
-
 void BaseVideoPlayer::process()
 {
-	OMXPacket *omxPacket = NULL;
-
-	//m_pts was previously set to 0 - might need later...
-	//currentPTS = 0;
-	
-	while(!doStop && !doAbort)
-	{
-		lock();
-		if(packets.empty())
-		{
-			pthread_cond_wait(&m_packet_cond, &m_lock);
-		}
-		unlock();
-
-		if(doAbort)
-		{
-			break;
-		}
-
-		lock();
-		if(doFlush && omxPacket)
-		{
-			OMXReader::freePacket(omxPacket);
-			omxPacket = NULL;
-			doFlush = false;
-		}
-		else
-		{
-			if(!omxPacket && !packets.empty())
-			{
-				omxPacket = packets.front();
-				cachedSize -= omxPacket->size;
-                //ofLogNotice() << "omxPacket->pts: " << omxPacket->pts;
-				packets.pop_front();
-			}
-		}
-		unlock();
-
-		lockDecoder();
-		if(doFlush && omxPacket)
-		{
-			OMXReader::freePacket(omxPacket);
-			omxPacket = NULL;
-			doFlush = false;
-		}
-		else
-		{
-			if(omxPacket && decode(omxPacket))
-			{
-				
-				OMXReader::freePacket(omxPacket);
-				omxPacket = NULL;
-			}
-		}
-		
-		unlockDecoder();
-
-
-	}
-	
-	if(omxPacket)
-	{
-		OMXReader::freePacket(omxPacket);
-	}
+    OMXPacket *omxPacket = NULL;
+    
+    //m_pts was previously set to 0 - might need later...
+    //currentPTS = 0;
+    
+    while(!doStop && !doAbort)
+    {
+        lock();
+        if(packets.empty())
+        {
+            pthread_cond_wait(&m_packet_cond, &m_lock);
+        }
+        unlock();
+        
+        if(doAbort)
+        {
+            break;
+        }
+        
+        lock();
+            if(!omxPacket && !packets.empty())
+            {
+                omxPacket = packets.front();
+                cachedSize -= omxPacket->size;
+                ofLogVerbose() << "REDUCING: " << cachedSize;
+                packets.pop_front();
+            }
+            if(omxPacket)
+            {
+                lockDecoder();
+                if(decode(omxPacket))
+                {
+                    OMXReader::freePacket(omxPacket, "omxPacket && decode(omxPacket)");
+                    omxPacket = NULL;
+                }
+                unlockDecoder();
+            }
+        unlock();
+    }
+    
+    if(omxPacket)
+    {
+        OMXReader::freePacket(omxPacket, "BaseVideoPlayer::process END");
+    }
 }
 
 bool BaseVideoPlayer::closeDecoder()

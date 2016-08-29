@@ -496,23 +496,10 @@ OMXPacket* OMXReader::Read()
         pkt.pts = AV_NOPTS_VALUE;
     }
     
-    omxPacket = allocPacket(pkt.size);
-    /* oom error allocation av packet */
-    if(!omxPacket)
-    {
-        isEOF = true;
-        av_free_packet(&pkt);
-        unlock();
-        return NULL;
-    }
+    omxPacket =  new OMXPacket(pkt);
     
     omxPacket->codec_type = pStream->codec->codec_type;
-    
-    /* copy content into our own packet */
-    omxPacket->size = pkt.size;
-    
-    if (pkt.data)
-        memcpy(omxPacket->data, pkt.data, omxPacket->size);
+        
     
     omxPacket->stream_index = pkt.stream_index;
     getHints(pStream, &omxPacket->hints);
@@ -911,29 +898,16 @@ bool OMXReader::getIsEOF()
 }
 
 //__attribute__((always_inline))
-void OMXReader::freePacket(OMXPacket *pkt)
+void OMXReader::freePacket(OMXPacket *pkt, string caller)
 {
+    ofLogVerbose(__func__) << "caller: " << caller;
     if(pkt)
     {
-        if(pkt->data)
-            free(pkt->data);
-        free(pkt);
+        delete pkt;
     }
 }
 
-OMXPacket *OMXReader::allocPacket(int size)
-{
-    OMXPacket *pkt = new OMXPacket();
-    pkt->data = new uint8_t[size + FF_INPUT_BUFFER_PADDING_SIZE];
-    //memset(pkt->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-    pkt->size = size;
-    pkt->dts  = DVD_NOPTS_VALUE;
-    pkt->pts  = DVD_NOPTS_VALUE;
-    pkt->now  = DVD_NOPTS_VALUE;
-    pkt->duration = DVD_NOPTS_VALUE;
-    
-    return pkt;
-}
+
 
 bool OMXReader::setActiveStream(OMXStreamType type, unsigned int index)
 {

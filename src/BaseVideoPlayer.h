@@ -47,7 +47,7 @@ public:
     void applyFilter(OMX_IMAGEFILTERTYPE filter);
     bool decode(OMXPacket *pkt);
     void process();
-    void flush();
+    void flush(string caller="");
     
     bool addPacket(OMXPacket *pkt);
     

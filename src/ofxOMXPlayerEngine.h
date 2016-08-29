@@ -107,7 +107,7 @@ private:
     
     OMXClock* clock;
     
-    OMXPacket* packet;
+    //OMXPacket* packet;
     
     
     

@@ -294,38 +294,50 @@ void OMXAudioPlayer::process()
         }
 
         lock();
-        if(doFlush && omxPacket)
+        if(omxPacket)
         {
-            OMXReader::freePacket(omxPacket);
-            omxPacket = NULL;
-            doFlush = false;
-        }
-        else if(!omxPacket && !packets.empty())
+            if(doFlush)
+            {
+                OMXReader::freePacket(omxPacket, __func__);
+                omxPacket = NULL;
+            }
+        }else
         {
-            omxPacket = packets.front();
-            cachedSize -= omxPacket->size;
-            packets.pop_front();
+            if(!packets.empty())
+            {
+                omxPacket = packets.front();
+                cachedSize -= omxPacket->size;
+                packets.pop_front();
+            }
         }
         unlock();
 
-        lockDecoder();
-        if(doFlush && omxPacket)
+
+        
+        if(omxPacket)
         {
-            OMXReader::freePacket(omxPacket);
-            omxPacket = NULL;
-            doFlush = false;
+            lockDecoder();
+            if(doFlush)
+            {
+                OMXReader::freePacket(omxPacket, __func__);
+                omxPacket = NULL;
+                doFlush = false;
+            }else
+            {
+                if(decode(omxPacket))
+                {
+                    OMXReader::freePacket(omxPacket, __func__);
+                    omxPacket = NULL;
+                }
+            }
+            unlockDecoder();
         }
-        else if(omxPacket && decode(omxPacket))
-        {
-            OMXReader::freePacket(omxPacket);
-            omxPacket = NULL;
-        }
-        unlockDecoder();
+        
     }
 
     if(omxPacket)
     {
-        OMXReader::freePacket(omxPacket);
+        OMXReader::freePacket(omxPacket, __func__);
     }
 }
 
@@ -339,7 +351,7 @@ void OMXAudioPlayer::flush()
     {
         OMXPacket *pkt = packets.front();
         packets.pop_front();
-        OMXReader::freePacket(pkt);
+        OMXReader::freePacket(pkt, "OMXAudioPlayer::flush");
     }
     currentPTS = DVD_NOPTS_VALUE;
     cachedSize = 0;

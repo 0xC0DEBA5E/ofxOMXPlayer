@@ -88,11 +88,11 @@ class OMXAudioPlayer : public OMXThread
 
 		unsigned int getCached()
 		{
+            unsigned int cached_size = 0;
 			lock();
-			unsigned int cached_size = cachedSize;
+			cached_size = cachedSize;
 			unlock();
 			return cached_size;
-
 		};
 
 		void setCurrentVolume(long nVolume);

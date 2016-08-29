@@ -113,7 +113,7 @@ void VideoPlayerTextured::close()
 	doAbort  = true;
 	doFlush   = true;
 	
-	flush();
+	flush("VideoPlayerTextured::close");
 	
 	if(ThreadHandle())
 	{
