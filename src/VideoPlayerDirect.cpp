@@ -56,7 +56,6 @@ bool VideoPlayerDirect::open(StreamInfo& hints, OMXClock* av_clock, ofxOMXPlayer
 	frameTime       = 0;
 	currentPTS      = DVD_NOPTS_VALUE;
 	doAbort         = false;
-	doFlush         = false;
 	cachedSize      = 0;
 	speed           = DVD_PLAYSPEED_NORMAL;
 	
@@ -122,7 +121,6 @@ bool VideoPlayerDirect::openDecoder()
 void VideoPlayerDirect::close()
 {
 	doAbort = true;
-	doFlush = true;
 
 	flush("VideoPlayerDirect::close");
 

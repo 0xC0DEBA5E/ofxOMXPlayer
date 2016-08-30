@@ -33,7 +33,6 @@ OMXAudioPlayer::OMXAudioPlayer()
     omxClock        = NULL;
     omxReader       = NULL;
     decoder         = NULL;
-    doFlush         = false;
     cachedSize      = 0;
     channelMap      = NULL;
     audioCodecOMX   = NULL;
@@ -102,7 +101,6 @@ bool OMXAudioPlayer::open(StreamInfo& hints,
     deviceName      = device;
     currentPTS      = DVD_NOPTS_VALUE;
     doAbort         = false;
-    doFlush         = false;
     cachedSize      = 0;
     audioCodecOMX   = NULL;
     channelMap      = NULL;
@@ -136,7 +134,6 @@ bool OMXAudioPlayer::open(StreamInfo& hints,
 bool OMXAudioPlayer::close()
 {
     doAbort  = true;
-    doFlush   = true;
 
     flush();
 
@@ -293,44 +290,30 @@ void OMXAudioPlayer::process()
             break;
         }
 
-        lock();
+        
+        if(!omxPacket)
+        {
+            
+        }
         if(omxPacket)
         {
-            if(doFlush)
+            lockDecoder();
+            if(decode(omxPacket))
             {
                 OMXReader::freePacket(omxPacket, __func__);
                 omxPacket = NULL;
             }
+            unlockDecoder();
         }else
         {
             if(!packets.empty())
             {
-                omxPacket = packets.front();
-                cachedSize -= omxPacket->size;
-                packets.pop_front();
+                lock();
+                    omxPacket = packets.front();
+                    cachedSize -= omxPacket->size;
+                    packets.pop_front();
+                unlock();
             }
-        }
-        unlock();
-
-
-        
-        if(omxPacket)
-        {
-            lockDecoder();
-            if(doFlush)
-            {
-                OMXReader::freePacket(omxPacket, __func__);
-                omxPacket = NULL;
-                doFlush = false;
-            }else
-            {
-                if(decode(omxPacket))
-                {
-                    OMXReader::freePacket(omxPacket, __func__);
-                    omxPacket = NULL;
-                }
-            }
-            unlockDecoder();
         }
         
     }
@@ -346,7 +329,6 @@ void OMXAudioPlayer::flush()
     //ofLogVerbose(__func__) << "OMXAudioPlayer::Flush start";
     lock();
     lockDecoder();
-    doFlush = true;
     while (!packets.empty())
     {
         OMXPacket *pkt = packets.front();

@@ -42,7 +42,6 @@ bool VideoPlayerTextured::open(StreamInfo& hints, OMXClock *av_clock, ofxOMXPlay
 	frameTime   = 0;
 	currentPTS = DVD_NOPTS_VALUE;
 	doAbort      = false;
-	doFlush       = false;
 	cachedSize = 0;
 	speed       = DVD_PLAYSPEED_NORMAL;
 	timeStampAdjustment = omxClock->getAbsoluteClock();
@@ -111,7 +110,6 @@ bool VideoPlayerTextured::openDecoder()
 void VideoPlayerTextured::close()
 {
 	doAbort  = true;
-	doFlush   = true;
 	
 	flush("VideoPlayerTextured::close");
 	

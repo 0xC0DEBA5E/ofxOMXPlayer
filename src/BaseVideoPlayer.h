@@ -35,7 +35,6 @@ public:
     float fps;
     double frameTime;
     bool doAbort;
-    bool doFlush;
     int speed;
     double timeStampAdjustment; // time stamp of last flippage. used to play at a forced framerate
     unsigned int cachedSize;

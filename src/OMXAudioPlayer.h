@@ -44,7 +44,6 @@ class OMXAudioPlayer : public OMXThread
 		bool    doHardwareDecode;
 		bool    doBoostOnDownmix;
 		bool    doAbort;
-		bool    doFlush;
     
 		enum PCMChannels*   channelMap;
 		unsigned int        cachedSize;

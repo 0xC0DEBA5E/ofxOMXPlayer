@@ -368,7 +368,7 @@ bool OMXReader::SeekTime(int time, bool backwords, double *startpts, bool doLoop
     
     
     int ret = av_seek_frame(avFormatContext, -1, seek_pts, backwords ? AVSEEK_FLAG_BACKWARD : 0);
-    
+#if 0  
     if(ret >= 0)
     {
         updateCurrentPTS();
@@ -380,7 +380,14 @@ bool OMXReader::SeekTime(int time, bool backwords, double *startpts, bool doLoop
         }
         
     }
+#endif
     
+    if(fileObject)
+    {
+        fileObject->rewindFile(); 
+    }
+    
+    updateCurrentPTS();
     
     // in this case the start time is requested time
     if(startpts)
@@ -1011,12 +1018,9 @@ void OMXReader::updateCurrentPTS()
         if(stream && stream->cur_dts != (int64_t)AV_NOPTS_VALUE)
         {
             double ts = ConvertTimestamp(stream->cur_dts, stream->time_base.den, stream->time_base.num);
-            if(currentPTS == DVD_NOPTS_VALUE || currentPTS > ts )
-            {
-                currentPTS = ts;
-            }
+            currentPTS = ts;
         }
-        //ofLogVerbose(__func__) << "currentPTS: " << currentPTS;
+        ofLogVerbose(__func__) << "currentPTS: " << currentPTS;
     }
 }
 

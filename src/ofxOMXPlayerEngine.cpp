@@ -281,6 +281,8 @@ void ofxOMXPlayerEngine::process()
             }
         }else
         {
+            isCacheEmpty = !videoPlayer->getCached();
+#if 0
             if (hasAudio)
             {
                 if (!audioPlayer->getCached() && !videoPlayer->getCached())
@@ -295,7 +297,7 @@ void ofxOMXPlayerEngine::process()
                     isCacheEmpty = true;
                 }
             }
-            
+#endif           
             if (omxReader.getIsEOF() && isCacheEmpty)
             {
                 videoPlayer->submitEOS();
@@ -710,6 +712,7 @@ void ofxOMXPlayerEngine::onVideoLoop()
 }
 void ofxOMXPlayerEngine::onVideoEnd()
 {
+    clock->stop();
     if (listener != NULL)
     {
         

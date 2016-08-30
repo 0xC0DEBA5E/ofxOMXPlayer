@@ -17,7 +17,6 @@ BaseVideoPlayer::BaseVideoPlayer()
 	omxClock      = NULL;
 	decoder       = NULL;
 	fps           = 25.0f;
-	doFlush         = false;
 	cachedSize   = 0;
 	currentPTS	= DVD_NOPTS_VALUE;
 	speed         = DVD_PLAYSPEED_NORMAL;
@@ -148,7 +147,6 @@ void BaseVideoPlayer::flush(string caller)
 
 	lock();
 	lockDecoder();
-	doFlush = true;
     ofLogVerbose() << "FLUSHING FROM caller: " << caller;
 	while (!packets.empty())
 	{
@@ -220,9 +218,10 @@ void BaseVideoPlayer::process()
         {
             break;
         }
-        
-        lock();
-            if(!omxPacket && !packets.empty())
+        if(!packets.empty())
+        {
+            lock();
+            if(!omxPacket)
             {
                 omxPacket = packets.front();
                 cachedSize -= omxPacket->size;
@@ -239,7 +238,8 @@ void BaseVideoPlayer::process()
                 }
                 unlockDecoder();
             }
-        unlock();
+            unlock();
+        }
     }
     
     if(omxPacket)
